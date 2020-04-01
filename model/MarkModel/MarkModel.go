@@ -7,11 +7,15 @@ import (
 )
 
 type Mark struct {
-	ID   uint       `gorm:"primary_key" json:"id"`
-	User string     `json:"user"`
-	Kf   string     `json:"kf"`
-	At   time.Time  `json:"at"`
-	Kefu KfModel.Kf `gorm:"foreignkey:Kf" json:"kefu"`
+	ID    uint       `gorm:"primary_key" json:"id"`
+	User  string     `json:"user" gorm:"size:40"`
+	KfUid uint       `json:"kf_uid"`
+	At    time.Time  `json:"at"`
+	Kefu  KfModel.Kf `gorm:"foreignkey:KfUid" json:"kefu"`
+}
+
+func (Mark) TableName() string {
+	return "mark"
 }
 
 func (m *Mark) Create() error {

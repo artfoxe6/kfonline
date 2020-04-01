@@ -8,8 +8,12 @@ import (
 type Kf struct {
 	ID       uint   `gorm:"primary_key" json:"id"`
 	Name     string `json:"name"`
-	Phone    string `json:"phone" gorm:"unique"`
+	Phone    string `json:"phone" gorm:"unique size:12"`
 	Password string `json:"password"`
+}
+
+func (Kf) TableName() string {
+	return "kf"
 }
 
 func (kf *Kf) Find(r *request.Request) error {
