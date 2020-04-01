@@ -41,6 +41,15 @@ var (
 		Exp int
 	}{}
 
+	Centrifuge = struct {
+		Addr   string
+		ApiKey string
+	}{}
+
+	Kf = struct {
+		Channel string
+	}{}
+
 	//----------- 定义配置文件结构体 -----------
 	//ConfigName = struct {
 	//	Key1 int

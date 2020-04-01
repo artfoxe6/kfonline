@@ -1,27 +1,30 @@
 package api
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"kfonline/service/user"
+	"kfonline/util/request"
+)
 
 func LoadUserRoute(r *gin.Engine) {
-	user := r.Group("/user")
-
-	//获取uuid，获取后保存在本地
-	user.GET("uuid", func(c *gin.Context) {
-
-	})
-
-	//获取客服
-	user.GET("kf", func(c *gin.Context) {
-
+	g := r.Group("/user")
+	//检查是否有可用的在线客服
+	g.GET("check/online/kf", func(c *gin.Context) {
+		user.CheckOnlineKf(request.New(c))
 	})
 
 	//发送消息
-	user.POST("publish", func(c *gin.Context) {
-
+	g.POST("publish", func(c *gin.Context) {
+		user.Publish(request.New(c))
 	})
 
-	//获取以往的聊天记录
-	user.GET("history", func(c *gin.Context) {
+	//获取连接凭证
+	g.GET("jwt", func(c *gin.Context) {
+		user.Jwt(request.New(c))
+	})
 
+	//获取私有频道连接凭证
+	g.GET("jwt/private", func(c *gin.Context) {
+		user.PrivateJwt(request.New(c))
 	})
 }

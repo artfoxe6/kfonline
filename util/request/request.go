@@ -3,6 +3,7 @@ package request
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"kfonline/util/token"
 	"log"
 	"net/http"
 	"strconv"
@@ -134,3 +135,16 @@ func (r *Request) PerPage() int {
 }
 
 //--------------- end ----------------------
+
+//获取token中的clams
+func (r *Request) TokenClams() (map[string]interface{}, error) {
+	t := r.Header("Authorization")
+	if t == "" {
+		return nil, errors.New("Authorization field not found.")
+	}
+	clams, err := token.VerifyJwtToken(t)
+	if err != nil {
+		return nil, err
+	}
+	return clams, nil
+}

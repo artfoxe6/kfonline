@@ -3,31 +3,38 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"kfonline/middleware"
+	"kfonline/service/kf"
+	"kfonline/util/request"
 )
 
 func LoadKfRoute(r *gin.Engine) {
 
-	kf := r.Group("/kf")
-	kf.Use(middleware.Auth())
+	g := r.Group("/kf")
+	g.Use(middleware.Auth())
 	{
-		// 获取uuid ,通过id唯一生成，确保每次获取的一致
-		kf.GET("/uuid", func(c *gin.Context) {
-
+		//添加客服
+		g.POST("/add", func(c *gin.Context) {
+			kf.AddKf(request.New(c))
 		})
-
+		// 删除客服
+		g.POST("/del", func(c *gin.Context) {
+			kf.DelKf(request.New(c))
+		})
 		//发送消息
-		kf.POST("/publish", func(c *gin.Context) {
-
+		g.POST("/publish", func(c *gin.Context) {
+			kf.Publish(request.New(c))
 		})
-
 		//客服登录
-		kf.POST("/login", func(c *gin.Context) {
-
+		g.POST("/login", func(c *gin.Context) {
+			kf.Login(request.New(c))
 		})
-
-		//获取以往的聊天列表
-		kf.GET("/history", func(c *gin.Context) {
-
+		//获取连接凭证
+		g.POST("/jwt", func(c *gin.Context) {
+			kf.Jwt(request.New(c))
+		})
+		//获取私有频道连接凭证
+		g.POST("/jwt/private", func(c *gin.Context) {
+			kf.PrivateJwt(request.New(c))
 		})
 	}
 

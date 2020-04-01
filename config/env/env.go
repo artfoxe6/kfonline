@@ -19,6 +19,8 @@ func Load() {
 	mapTo(h, "database", &Database)
 	mapTo(h, "redis", &Redis)
 	mapTo(h, "jwt", &Jwt)
+	mapTo(h, "centrifuge", &Centrifuge)
+	mapTo(h, "kf", &Kf)
 
 	//---------- 配置文件到结构体的映射 -----------
 	//
