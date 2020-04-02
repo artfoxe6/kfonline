@@ -2,7 +2,6 @@ package kf
 
 import (
 	"context"
-	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 	"kfonline/config/centrifuge"
 	"kfonline/config/env"
@@ -11,22 +10,9 @@ import (
 	"kfonline/util/lib"
 	"kfonline/util/request"
 	"kfonline/util/token"
+	"strconv"
 	"time"
 )
-
-//获取共有jwt
-func Jwt(r *request.Request) bool {
-	kfUuid := uuid.NewV3(uuid.UUID{}, r.Post("phone")).String()
-	jwt, _ := token.CreateJwtToken(map[string]interface{}{
-		"sub": kfUuid,
-		"exp": time.Now().Add(time.Second * time.Duration(env.Jwt.Exp)).Unix(),
-		"kf":  1,
-	})
-	return r.Success(map[string]interface{}{
-		"uuid": kfUuid,
-		"jwt":  jwt,
-	})
-}
 
 //登录
 func Login(r *request.Request) bool {
@@ -34,7 +20,7 @@ func Login(r *request.Request) bool {
 		return r.Error(err.Error())
 	}
 	kf := new(KfModel.Kf)
-	err := kf.Find(r)
+	err := kf.First(r)
 	if err != nil {
 		return r.Error("用户不存在")
 	}
@@ -42,11 +28,11 @@ func Login(r *request.Request) bool {
 	if err != nil {
 		return r.Error("密码错误")
 	}
-	kfUuid := uuid.NewV3(uuid.UUID{}, r.Post("phone")).String()
-	return r.Success(map[string]interface{}{
-		"uuid": kfUuid,
-		//"history": history(kfuuid, r),
+	authToken, _ := token.CreateJwtToken(map[string]interface{}{
+		"sub": kf.ID,
+		"exp": time.Now().Add(time.Second * time.Duration(env.Jwt.Exp)).Unix(),
 	})
+	return r.Success(authToken)
 }
 
 //添加客服
@@ -85,13 +71,20 @@ func DelKf(r *request.Request) bool {
 
 //往频道发送消息
 func Publish(r *request.Request) bool {
-	kfUuid := []byte(r.Post("channel"))[1:]
+	if err := r.Validate([]string{"uuid", "message"}); err != nil {
+		return r.Error(err.Error())
+	}
+	clams, err := r.TokenClams()
+	if err != nil {
+		return r.Error(err.Error())
+	}
 	message := &MessageModel.Message{
-		User:    string(kfUuid),
+		User:    r.Post("uuid"),
 		Message: r.Post("message"),
+		KfUid:   uint(lib.Int(clams["id"].(string))),
 		At:      time.Now(),
 	}
-	err := message.Create()
+	err = message.Create()
 	if err != nil {
 		return r.Error(err.Error())
 	}
@@ -99,47 +92,7 @@ func Publish(r *request.Request) bool {
 	return r.Success(nil)
 }
 
-//获取历史消息记录
-func history(kfuuid string, r *request.Request) {
-	//kfs := new(KfModel.Kfs)
-	//err := kfs.List(kfuuid, r.Page(), r.PerPage())
-	//if err != nil {
-	//	return nil
-	//}
-	//return kfs
-}
-
-//订阅用户的私有频道时获取私有jwt验证
-func PrivateJwt(r *request.Request) bool {
-	var form struct {
-		Client   string   `form:"client" binding:"required"`
-		Channels []string `form:"channels" binding:"required"`
-	}
-	if err := r.C.ShouldBind(&form); err != nil {
-		return r.Error(err.Error())
-	}
-	clams, err := r.TokenClams()
-	if err != nil {
-		return r.Error(err.Error())
-	}
-	isKf := clams["kf"].(string)
-	if isKf != "1" {
-		return r.Error("subscribe failed")
-	}
-	res, err := token.CreateJwtToken(map[string]interface{}{
-		"client":  form.Client,
-		"channel": form.Channels[0],
-	})
-	if err != nil {
-		return r.Error(err.Error())
-	}
-	resp := map[string][]map[string]string{
-		"channels": {
-			{
-				"channel": form.Channels[0],
-				"token":   res,
-			},
-		},
-	}
-	return r.Success(resp)
+//客服的频道名称  默认客服的id
+func KfChannel(kfId int) string {
+	return strconv.Itoa(kfId)
 }

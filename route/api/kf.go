@@ -28,14 +28,6 @@ func LoadKfRoute(r *gin.Engine) {
 		g.POST("/login", func(c *gin.Context) {
 			kf.Login(request.New(c))
 		})
-		//获取连接凭证
-		g.POST("/jwt", func(c *gin.Context) {
-			kf.Jwt(request.New(c))
-		})
-		//获取私有频道连接凭证
-		g.POST("/jwt/private", func(c *gin.Context) {
-			kf.PrivateJwt(request.New(c))
-		})
 	}
 
 }

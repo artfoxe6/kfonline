@@ -48,6 +48,7 @@ var (
 
 	Kf = struct {
 		Channel string
+		WaitNum int
 	}{}
 
 	//----------- 定义配置文件结构体 -----------

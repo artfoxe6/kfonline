@@ -2,26 +2,29 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/satori/go.uuid"
 	"kfonline/config/centrifuge"
 	"kfonline/config/env"
 	"kfonline/model/MessageModel"
+	"kfonline/util/lib"
 	"kfonline/util/request"
 	"kfonline/util/token"
+	"math/rand"
 	"time"
 )
 
 //获取共有jwt
 func Jwt(r *request.Request) bool {
 	userUuid := uuid.NewV4()
-	jwt, _ := token.CreateJwtToken(map[string]interface{}{
+	authToken, err := token.CreateJwtToken(map[string]interface{}{
 		"sub": userUuid,
 		"exp": time.Now().Add(time.Second * time.Duration(env.Jwt.Exp)).Unix(),
 	})
-	return r.Success(map[string]interface{}{
-		"uuid": userUuid,
-		"jwt":  jwt,
-	})
+	if err != nil {
+		return r.Error(err.Error())
+	}
+	return r.Success(authToken)
 }
 
 //往频道发送消息
@@ -34,6 +37,7 @@ func Publish(r *request.Request) bool {
 	message := &MessageModel.Message{
 		User:    userUuid,
 		Message: r.Post("message"),
+		KfUid:   uint(lib.Int(r.Post("channel"))),
 		At:      time.Now(),
 	}
 	err = message.Create()
@@ -44,49 +48,42 @@ func Publish(r *request.Request) bool {
 	return r.Success(nil)
 }
 
-//用户订阅自己的私有频道时获取私有jwt验证
-func PrivateJwt(r *request.Request) bool {
-	var form struct {
-		Client   string   `form:"client" binding:"required"`
-		Channels []string `form:"channels" binding:"required"`
-	}
-	if err := r.C.ShouldBind(&form); err != nil {
-		return r.Error(err.Error())
-	}
-	clams, err := r.TokenClams()
-	if err != nil {
-		return r.Error(err.Error())
-	}
-	userUuid := clams["uuid"].(string)
-	if ("$" + userUuid) != form.Channels[0] {
-		return r.Error("subscribe failed")
-	}
-	res, err := token.CreateJwtToken(map[string]interface{}{
-		"client":  form.Client,
-		"channel": form.Channels[0],
-	})
-	if err != nil {
-		return r.Error(err.Error())
-	}
-	resp := map[string][]map[string]string{
-		"channels": {
-			{
-				"channel": form.Channels[0],
-				"token":   res,
-			},
-		},
-	}
-	return r.Success(resp)
-}
-
+//检查是否有可用的客服
 func CheckOnlineKf(r *request.Request) bool {
-	res, err := centrifuge.Instance().PresenceStats(context.Background(), env.Kf.Channel)
+	res, err := centrifuge.Instance().Channels(context.Background())
 	if err != nil {
 		return r.Error(err.Error())
 	}
-	if res.NumUsers == 0 {
+	if len(res.Channels) == 0 {
 		return r.Error("当前没有客服在线")
 	}
+	channel, err := selectKf(res.Channels)
+	if err != nil {
+		return r.Error("暂无可用客服")
+	}
+	return r.Success(channel)
+}
 
-	return r.Success(nil)
+func selectKf(list []string) (string, error) {
+	pipe := centrifuge.Instance().Pipe()
+	for _, v := range list {
+		_ = pipe.AddPresenceStats(v)
+	}
+	reps, err := centrifuge.Instance().SendPipe(context.Background(), pipe)
+	if err != nil {
+		return "", err
+	}
+	temp := map[string]int{}
+	channels := []string{}
+	for k, v := range reps {
+		_ = json.Unmarshal(v.Result, &temp)
+		if temp["num_users"] < env.Kf.WaitNum {
+			channels = append(channels, list[k])
+		}
+	}
+	if len(channels) == 0 {
+		return "", err
+	}
+	rand.Seed(time.Now().UnixNano())
+	return channels[rand.Intn(len(channels))], nil
 }

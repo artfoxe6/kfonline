@@ -12,19 +12,13 @@ func LoadUserRoute(r *gin.Engine) {
 	g.GET("check/online/kf", func(c *gin.Context) {
 		user.CheckOnlineKf(request.New(c))
 	})
-
 	//发送消息
 	g.POST("publish", func(c *gin.Context) {
 		user.Publish(request.New(c))
 	})
-
 	//获取连接凭证
 	g.GET("jwt", func(c *gin.Context) {
 		user.Jwt(request.New(c))
 	})
 
-	//获取私有频道连接凭证
-	g.GET("jwt/private", func(c *gin.Context) {
-		user.PrivateJwt(request.New(c))
-	})
 }

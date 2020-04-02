@@ -16,7 +16,7 @@ func (Kf) TableName() string {
 	return "kf"
 }
 
-func (kf *Kf) Find(r *request.Request) error {
+func (kf *Kf) First(r *request.Request) error {
 	return db.Instance().Where("phone=?", r.Get("phone")).First(kf).Error
 }
 
