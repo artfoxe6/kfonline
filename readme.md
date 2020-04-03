@@ -1,4 +1,5 @@
 
+### 本项目正在开发中，当前请勿使用
 ##### 如何使用
 
 1. 下载本项目，编辑config.ini文件，至少需要配置 MySQL,Redis,Centrifugo,Jwt,
@@ -6,7 +7,7 @@
 项目中的centrifugo_server.json
 3. go run main.go
 
-##### 功能
+##### 实现功能
 
 - 基本客服接待
 - 客户备注
